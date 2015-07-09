@@ -14,7 +14,9 @@ func TestNewFile(t *testing.T) {
 	}
 
 	f.File.Close()
-	os.Remove(f.File.Name())
+	if err := os.Remove(f.File.Name()); err != nil {
+		t.Error("Failed to remove temporary file:", destination)
+	}
 }
 
 func TestMove(t *testing.T) {
@@ -29,5 +31,9 @@ func TestMove(t *testing.T) {
 
 	if _, err := os.Stat(destination); os.IsNotExist(err) {
 		t.Errorf(`Destination "%s" doesn't exist: %s\n`, err)
+	}
+
+	if err := os.Remove(destination); err != nil {
+		t.Error("Failed to remove test destination file:", destination)
 	}
 }
