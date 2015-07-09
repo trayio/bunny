@@ -1,6 +1,8 @@
 package nodes
 
 import (
+	"log"
+
 	"github.com/trayio/bunny/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
 	"github.com/trayio/bunny/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/ec2"
 )
@@ -11,7 +13,7 @@ type Node struct {
 
 // Collect gathers all running AWS instances with a specific tag.
 // Returns hostname tags in array of *Node structs.
-func Collect(cfg *aws.Config) ([]*Node, error) {
+func Collect(cfg *aws.Config) []*Node {
 	svc := ec2.New(cfg)
 	nodes := make([]*Node, 0)
 
@@ -30,7 +32,7 @@ func Collect(cfg *aws.Config) ([]*Node, error) {
 
 	resp, err := svc.DescribeInstances(params)
 	if err != nil {
-		return nodes, err
+		log.Println("Error while collecting nodes:", err)
 	}
 
 	if len(resp.Reservations) > 0 {
@@ -45,5 +47,5 @@ func Collect(cfg *aws.Config) ([]*Node, error) {
 		}
 	}
 
-	return nodes, nil
+	return nodes
 }
