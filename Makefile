@@ -19,4 +19,7 @@ build-static:
 clean:
 	rm -rf $(PROJECT)
 
+publish: test build-static
+	docker build -t tray/bunny . && docker push tray/bunny:latest
+
 .PHONY: test build clean
