@@ -20,13 +20,14 @@ const (
 
 func main() {
 	var (
-		rabbits []*nodes.Node
-		region  string
-		config  string
-		cfg     *aws.Config
-		sigChan = make(chan os.Signal, 1)
-		tmpl    = template.Must(template.New("config").Parse(configTemplate))
-		tick    *time.Ticker
+		rabbits  []*nodes.Node
+		region   string
+		config   string
+		cfg      *aws.Config
+		sigChan  = make(chan os.Signal, 1)
+		tmpl     = template.Must(template.New("config").Parse(configTemplate))
+		tickInit *time.Ticker
+		tick     *time.Ticker
 	)
 
 	flag.StringVar(&region, "region", "us-west-1", "AWS region")
@@ -41,22 +42,39 @@ func main() {
 
 	cfg = auth(region)
 
-	// first run
-	rabbits, _ = nodes.Collect(cfg)
-	tmpFile, _ := temporary.NewFile()
-	tmpl.Execute(tmpFile.File, rabbits)
-	tmpFile.Move(config)
-
+	tickInit = time.NewTicker(time.Second * 2)
 	tick = time.NewTicker(time.Minute * 5)
+
 	for {
 		select {
+		case <-tickInit.C:
+			rabbits = nodes.Collect(cfg)
+			if len(rabbits) < 2 {
+				continue
+			}
+			if config == "-" {
+				tmpl.Execute(os.Stdout, rabbits)
+			} else {
+				tmpFile, _ := temporary.NewFile()
+				tmpl.Execute(tmpFile.File, rabbits)
+				tmpFile.Move(config)
+				tickInit.Stop()
+			}
+
 		case <-tick.C:
-			rabbits, _ = nodes.Collect(cfg)
-			tmpFile, _ := temporary.NewFile()
-			tmpl.Execute(tmpFile.File, rabbits)
-			tmpFile.Move(config)
+			if config == "-" {
+				tmpl.Execute(os.Stdout, rabbits)
+			} else {
+				rabbits = nodes.Collect(cfg)
+				tmpFile, _ := temporary.NewFile()
+				tmpl.Execute(tmpFile.File, rabbits)
+				tmpFile.Move(config)
+			}
+
 		case <-sigChan:
 			close(sigChan)
+			tickInit.Stop()
+			tick.Stop()
 			return
 		}
 	}
