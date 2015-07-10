@@ -32,5 +32,9 @@ func (t *temporaryFile) Move(destination string) error {
 		return err
 	}
 
+	if err := os.Chmod(destination, 0444); err != nil {
+		return err
+	}
+
 	return nil
 }

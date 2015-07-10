@@ -20,6 +20,8 @@ func TestNewFile(t *testing.T) {
 }
 
 func TestMove(t *testing.T) {
+	const mode os.FileMode = 0444
+
 	f, err := NewFile()
 	if err != nil {
 		t.Error("Failed to create temporary file:", err)
@@ -33,7 +35,17 @@ func TestMove(t *testing.T) {
 		t.Errorf(`Destination "%s" doesn't exist: %s\n`, err)
 	}
 
+	stat, err := os.Stat(destination)
+	if err != nil {
+		t.Errorf("Failed to stat(2) %s: %s\n", destination, err)
+	}
+
+	if stat.Mode() != mode {
+		t.Errorf("Destination file should only have read permissions, but has: %s", stat.Mode())
+	}
+
 	if err := os.Remove(destination); err != nil {
 		t.Error("Failed to remove test destination file:", destination)
 	}
+
 }
